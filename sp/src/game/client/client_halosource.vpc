@@ -28,7 +28,8 @@ $Project "Client (Halo Source)"
 
 		$Folder	"HALOSOURCE DLL"
 		{
-			
+			$File "hud_radar_panel.cpp"
+			$File "hud_radar_panel.h"
 		}
 		
 		$Folder	"HL2 DLL"
