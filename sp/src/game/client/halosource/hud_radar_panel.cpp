@@ -34,7 +34,7 @@ static CHudRadarPanel *s_Radar = NULL;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CHudRadarPanel::CHudRadarPanel(const char *pElementName) : CHudElement(pElementName), BaseClass()
+CHudRadarPanel::CHudRadarPanel(const char *pElementName) : CHudElement(pElementName), CHudNumericDisplay(NULL, "HudRadar")
 {
 	Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );

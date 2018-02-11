@@ -36,9 +36,9 @@ public:
 	float	m_flTimeToRemove;
 };
 
-class CHudRadarPanel : public CHudElement, public Panel
+class CHudRadarPanel : public CHudElement, public CHudNumericDisplay
 {
-	DECLARE_CLASS_SIMPLE( CHudRadarPanel, Panel );
+	DECLARE_CLASS_SIMPLE( CHudRadarPanel, CHudNumericDisplay );
 
 public:
 	CHudRadarPanel(const char *pElementName);
