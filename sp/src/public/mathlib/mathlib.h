@@ -343,6 +343,12 @@ FORCEINLINE void VectorCopy(const vec_t *a, vec_t *b)
 	b[1]=a[1];
 	b[2]=a[2];
 }
+FORCEINLINE void VectorCopy(const QAngle *vecIn, QAngle *vecOut)
+{
+	vecOut->x = vecIn->x;
+	vecOut->y = vecIn->y;
+	vecOut->z = vecIn->z;
+}
 FORCEINLINE void VectorClear(vec_t *a)
 {
 	a[0]=a[1]=a[2]=0;
@@ -365,6 +371,12 @@ FORCEINLINE void VectorScale (const float* in, vec_t scale, float* out)
 	out[2] = in[2]*scale;
 }
 
+FORCEINLINE void VectorScale (const Vector *vecIn, float scale, Vector *vecOut)
+{
+	vecOut->x = vecIn->x * scale;
+	vecOut->y = vecIn->y * scale;
+	vecOut->z = vecIn->z * scale;
+}
 
 // Cannot be forceinline as they have overloads:
 inline void VectorFill(vec_t *a, float b)
@@ -417,6 +429,12 @@ FORCEINLINE void VectorMA( const float * start, float scale, const float *direct
 	VectorMAInline(start, scale, direction, dest);
 }
 
+FORCEINLINE void VectorMA( const QAngle *vec1, float scale, const QAngle *vec2, QAngle *vecOut )
+{
+	vecOut->x = vec1->x + vec2->x*scale;
+	vecOut->y = vec1->y + vec2->y*scale;
+	vecOut->z = vec1->z + vec2->z*scale;
+}
 
 int VectorCompare (const float *v1, const float *v2);
 
@@ -630,6 +648,29 @@ inline float MatrixColumnDotProduct( const matrix3x4_t &in1, int col, const Vect
 }
 
 int __cdecl BoxOnPlaneSide (const float *emins, const float *emaxs, const cplane_t *plane);
+
+// Always returns a value from -180 to 180
+inline float AngleSubtract(float a1, float a2)
+{
+	float a = a1 - a2;
+	a = fmod(a, 360.0f); // Chop it down quickly, then level it out
+	while (a > 180.0f)
+	{
+		a -= 360.0f;
+	}
+	while (a < -180.0f)
+	{
+		a += 360.0f;
+	}
+	return a;
+}
+
+inline void AnglesSubtract(QAngle *v1, QAngle *v2, QAngle *v3)
+{
+	v3->x = AngleSubtract(v1->x, v2->x);
+	v3->y = AngleSubtract(v1->y, v2->y);
+	v3->z = AngleSubtract(v1->z, v2->z);
+}
 
 inline float anglemod(float a)
 {

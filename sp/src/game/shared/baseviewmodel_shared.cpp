@@ -382,12 +382,14 @@ void CBaseViewModel::SendViewModelMatchingSequence( int sequence )
 #include "ivieweffects.h"
 #endif
 
+/*void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePosition, const QAngle& eyeAngles )*/
 void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePosition, const QAngle& eyeAngles )
 {
 	// UNDONE: Calc this on the server?  Disabled for now as it seems unnecessary to have this info on the server
 #if defined( CLIENT_DLL )
-	QAngle vmangoriginal = eyeAngles;
+	//QAngle vmangoriginal = eyeAngles;
 	QAngle vmangles = eyeAngles;
+	//Vector vmangles = eyeAngles;
 	Vector vmorigin = eyePosition;
 
 	CBaseCombatWeapon *pWeapon = m_hWeapon.Get();
@@ -410,7 +412,8 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 #if !defined ( CSTRIKE_DLL )
 	// This was causing weapon jitter when rotating in updated CS:S; original Source had this in above InPrediction block  07/14/10
 	// Add lag
-	CalcViewModelLag( vmorigin, vmangles, vmangoriginal );
+	/*CalcViewModelLag( vmorigin, vmangles, vmangoriginal );*/
+	CalcViewModelLag( &vmorigin, &vmangles );
 #endif
 
 #if defined( CLIENT_DLL )
@@ -462,61 +465,98 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-float g_fMaxViewModelLag = 1.5f;
+//float g_fMaxViewModelLag = 1.5f;
 
-void CBaseViewModel::CalcViewModelLag( Vector& origin, QAngle& angles, QAngle& original_angles )
+ConVar cl_wpn_sway_damp("cl_wpn_sway_damp", "0.666666", FCVAR_ARCHIVE);
+ConVar cl_wpn_sway_fall("cl_wpn_sway_fall", "0.5", FCVAR_ARCHIVE);
+ConVar cl_wpn_sway_enabled("cl_wpn_sway_enabled", "0", FCVAR_ARCHIVE);
+ConVar cl_wpn_sway_interval("cl_wpn_sway_interval", "2.5", FCVAR_ARCHIVE);
+
+/*void CBaseViewModel::CalcViewModelLag( Vector& origin, QAngle& angles, QAngle& original_angles )*/
+void CBaseViewModel::CalcViewModelLag( Vector *origin, QAngle *angles)
 {
-	Vector vOriginalOrigin = origin;
-	QAngle vOriginalAngles = angles;
-
-	// Calculate our drift
-	Vector	forward;
-	AngleVectors( angles, &forward, NULL, NULL );
-
-	if ( gpGlobals->frametime != 0.0f )
+#ifdef CLIENT_DLL
+	if (cl_wpn_sway_enabled.GetInt())
 	{
-		Vector vDifference;
-		VectorSubtract( forward, m_vecLastFacing, vDifference );
+		// Sway viewmodel when changing viewangles
+		static QAngle previousAngles{};
 
-		float flSpeed = 5.0f;
+		QAngle deltaAngles;
+		AnglesSubtract(angles, &previousAngles, &deltaAngles);
+		//VectorScale(&deltaAngles, 1.0f, &deltaAngles);
 
-		// If we start to lag too far behind, we'll increase the "catch up" speed.  Solves the problem with fast cl_yawspeed, m_yaw or joysticks
-		//  rotating quickly.  The old code would slam lastfacing with origin causing the viewmodel to pop to a new position
-		float flDiff = vDifference.Length();
-		if ( (flDiff > g_fMaxViewModelLag) && (g_fMaxViewModelLag > 0.0f) )
+		const double f = abs(1.0 / (double)cl_wpn_sway_damp.GetFloat());
+		const double y = (double)cl_wpn_sway_interval.GetFloat();
+		const double dampRatio = 1.0 / pow(f, y);
+		VectorMA(&previousAngles, dampRatio, &deltaAngles, angles);
+		VectorCopy(angles, &previousAngles);
+
+		// Move viewmodel downwards when jumping etc.
+		static float previousOriginZ = 0.0f;
+		const float deltaZ = origin->z - previousOriginZ;
+		if (deltaZ > 0.0f)
 		{
-			float flScale = flDiff / g_fMaxViewModelLag;
-			flSpeed *= flScale;
+			origin->z = origin->z - deltaZ * cl_wpn_sway_fall.GetFloat();
+		}
+		previousOriginZ = origin->z;
+	}
+#endif
+	/*
+	else if (cl_wpn_sway_enabled.GetInt())
+	{
+		Vector vOriginalOrigin = origin;
+		QAngle vOriginalAngles = angles;
+
+		// Calculate our drift
+		Vector	forward;
+		AngleVectors( angles, &forward, NULL, NULL );
+
+		if ( gpGlobals->frametime != 0.0f )
+		{
+			Vector vDifference;
+			VectorSubtract( forward, m_vecLastFacing, vDifference );
+
+			float flSpeed = 5.0f;
+
+			// If we start to lag too far behind, we'll increase the "catch up" speed.  Solves the problem with fast cl_yawspeed, m_yaw or joysticks
+			//  rotating quickly.  The old code would slam lastfacing with origin causing the viewmodel to pop to a new position
+			float flDiff = vDifference.Length();
+			if ( (flDiff > g_fMaxViewModelLag) && (g_fMaxViewModelLag > 0.0f) )
+			{
+				float flScale = flDiff / g_fMaxViewModelLag;
+				flSpeed *= flScale;
+			}
+
+			// FIXME:  Needs to be predictable?
+			VectorMA( m_vecLastFacing, flSpeed * gpGlobals->frametime, vDifference, m_vecLastFacing );
+			// Make sure it doesn't grow out of control!!!
+			VectorNormalize( m_vecLastFacing );
+			VectorMA( origin, 5.0f, vDifference * -1.0f, origin );
+
+			Assert( m_vecLastFacing.IsValid() );
 		}
 
-		// FIXME:  Needs to be predictable?
-		VectorMA( m_vecLastFacing, flSpeed * gpGlobals->frametime, vDifference, m_vecLastFacing );
-		// Make sure it doesn't grow out of control!!!
-		VectorNormalize( m_vecLastFacing );
-		VectorMA( origin, 5.0f, vDifference * -1.0f, origin );
+		Vector right, up;
+		AngleVectors( original_angles, &forward, &right, &up );
 
-		Assert( m_vecLastFacing.IsValid() );
+		float pitch = original_angles[ PITCH ];
+		if ( pitch > 180.0f )
+			pitch -= 360.0f;
+		else if ( pitch < -180.0f )
+			pitch += 360.0f;
+
+		if ( g_fMaxViewModelLag == 0.0f )
+		{
+			origin = vOriginalOrigin;
+			angles = vOriginalAngles;
+		}
+
+		//FIXME: These are the old settings that caused too many exposed polys on some models
+		VectorMA( origin, -pitch * 0.035f,	forward,	origin );
+		VectorMA( origin, -pitch * 0.03f,		right,	origin );
+		VectorMA( origin, -pitch * 0.02f,		up,		origin);
 	}
-
-	Vector right, up;
-	AngleVectors( original_angles, &forward, &right, &up );
-
-	float pitch = original_angles[ PITCH ];
-	if ( pitch > 180.0f )
-		pitch -= 360.0f;
-	else if ( pitch < -180.0f )
-		pitch += 360.0f;
-
-	if ( g_fMaxViewModelLag == 0.0f )
-	{
-		origin = vOriginalOrigin;
-		angles = vOriginalAngles;
-	}
-
-	//FIXME: These are the old settings that caused too many exposed polys on some models
-	VectorMA( origin, -pitch * 0.035f,	forward,	origin );
-	VectorMA( origin, -pitch * 0.03f,		right,	origin );
-	VectorMA( origin, -pitch * 0.02f,		up,		origin);
+	*/
 }
 
 //-----------------------------------------------------------------------------
