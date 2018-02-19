@@ -325,18 +325,33 @@ void CWeaponPistol::ItemPostFrame( void )
 // Purpose: 
 // Output : int
 //-----------------------------------------------------------------------------
+ConVar sv_wpn_cs_recoil("sv_wpn_cs_recoil", "1", FCVAR_ARCHIVE); // 0 = HL2 recoil, 1 = CS recoil
+
 Activity CWeaponPistol::GetPrimaryAttackActivity( void )
 {
-	if ( m_nNumShotsFired < 1 )
+	if ( sv_wpn_cs_recoil.GetInt() )
+	{
 		return ACT_VM_PRIMARYATTACK;
+	}
+	else
+	{
+		if ( m_nNumShotsFired < 1 )
+		{
+			return ACT_VM_PRIMARYATTACK;
+		}
 
-	if ( m_nNumShotsFired < 2 )
-		return ACT_VM_RECOIL1;
+		if ( m_nNumShotsFired < 2 )
+		{
+			return ACT_VM_RECOIL1;
+		}
 
-	if ( m_nNumShotsFired < 3 )
-		return ACT_VM_RECOIL2;
+		if ( m_nNumShotsFired < 3 )
+		{
+			return ACT_VM_RECOIL2;
+		}
 
-	return ACT_VM_RECOIL3;
+		return ACT_VM_RECOIL3;
+	}
 }
 
 //-----------------------------------------------------------------------------
