@@ -37,6 +37,7 @@ public : // IGameResources intreface
 	virtual const Color&GetTeamColor( int index );
 
 	// Player data access
+	virtual bool	IsPlayerSpotted( int iIndex );
 	virtual bool	IsConnected( int index );
 	virtual bool	IsAlive( int index );
 	virtual bool	IsFakePlayer( int index );
@@ -72,6 +73,7 @@ protected:
 	Color	m_Colors[MAX_TEAMS];
 	string_t m_szUnconnectedName;
 
+	bool	m_bPlayerSpotted[MAX_PLAYERS+1];
 };
 
 extern C_PlayerResource *g_PR;

@@ -332,3 +332,14 @@ bool C_PlayerResource::IsConnected( int iIndex )
 	else
 		return m_bConnected[iIndex];
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool C_PlayerResource::IsPlayerSpotted( int iIndex )
+{
+	if ( !IsConnected( iIndex ) )
+		return false;
+
+	return m_bPlayerSpotted[iIndex];
+}

@@ -28,8 +28,15 @@ $Project "Client (Halo Source)"
 
 		$Folder	"HALOSOURCE DLL"
 		{
+			$Folder	"VGUI"
+			{
+				$File "halosource\VGUI\hsmapoverview.cpp"
+				$File "halosource\VGUI\hsmapoverview.h"
+			}
+			
 			$File "halosource\hud_radar_panel.cpp"
 			$File "halosource\hud_radar_panel.h"
+			$File "$SRCDIR\game\shared\halosource\hs_shareddefs.h"
 		}
 		
 		$Folder	"HL2 DLL"
@@ -133,5 +140,4 @@ $Project "Client (Halo Source)"
 			$File	"episodic\c_npc_puppet.cpp"
 		}
 	}
-	
 }

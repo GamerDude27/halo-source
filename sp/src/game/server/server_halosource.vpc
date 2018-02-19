@@ -47,9 +47,9 @@ $Project "Server (Halo Source)"
 		$File	"$SRCDIR\game\shared\vehicle_choreo_generic_shared.h"
 		$File	"$SRCDIR\game\shared\weapon_parse_default.cpp"
 
-		$Folder	"RO DLL"
+		$Folder	"HALOSOURCE DLL"
 		{
-			
+			$File "$SRCDIR\game\shared\halosource\hs_shareddefs.h"
 		}
 		
 		$Folder	"HL2 DLL"
